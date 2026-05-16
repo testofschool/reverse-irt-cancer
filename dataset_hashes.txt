@@ -1,0 +1,4 @@
+# Dataset file hashes (SHA256 prefix)
+# Download files from URLs in README.md, then verify:
+GDSC2: f950a7027be265f8a7a74220a27fd18cbd368485349bd8c2048e88bb1cd07560
+PRISM_secondary: 88d1013506e0cd6f191a51c5f3fdd3fb2be54f8afb4e19a5d1f8538e81fbfec8

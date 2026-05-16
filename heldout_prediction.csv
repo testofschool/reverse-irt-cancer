@@ -1,0 +1,6 @@
+method,brier,delta_vs_irt
+Cancer-only,0.13381,0.11945
+Drug-only,0.034,0.01964
+Two-way additive,0.01759,0.00324
+Logistic FE,0.01811,0.00376
+Reverse IRT,0.01435,0.0

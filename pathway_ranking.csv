@@ -1,0 +1,23 @@
+pathway,mean_b,sd,n
+Mitosis,3.571,2.35,7
+Protein stability and degradation,2.078,3.567,9
+Cell cycle,1.569,2.713,13
+Apoptosis regulation,1.481,2.556,13
+EGFR signaling,0.917,1.174,7
+RTK signaling,0.622,2.317,12
+PI3K/MTOR signaling,0.604,2.741,26
+DNA replication,0.581,3.147,20
+Cytoskeleton,0.293,1.537,5
+ERK MAPK signaling,0.277,1.481,13
+IGF1R signaling,0.19,1.307,6
+Unclassified,0.051,2.194,34
+Chromatin histone acetylation,0.045,2.716,10
+"Other, kinases",-0.53,2.364,22
+Chromatin histone methylation,-0.79,2.318,12
+Chromatin other,-1.029,2.273,10
+Genome integrity,-1.11,2.143,13
+WNT signaling,-1.31,1.399,9
+Other,-1.319,3.317,28
+p53 pathway,-1.495,0.904,4
+Hormone-related,-2.176,1.41,4
+Metabolism,-2.45,3.622,6
