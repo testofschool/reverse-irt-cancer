@@ -8,7 +8,7 @@ COMPLETE VALIDATION SUITE v2
 4. PRISM replication with DepMap Model.csv lineage mapping
 """
 
-import numpy as np, pandas as pd, time, sys, os, json
+import numpy as np, pandas as pd, time, sys, os, json, argparse
 from scipy.optimize import minimize
 from scipy.special import expit
 from scipy import stats
@@ -50,8 +50,8 @@ def avg_resistance(S, K, M, J):
 # ============================================================
 # LOAD GDSC2
 # ============================================================
-def load_gdsc2():
-    df = pd.read_excel('/home/claude/gdsc2_data.xlsx', engine='openpyxl')
+def load_gdsc2(path):
+    df = pd.read_excel(path, engine='openpyxl')
     df = df[df['TCGA_DESC']!='UNCLASSIFIED'].copy()
     gmed = df['LN_IC50'].median()
     df['sens'] = (df['LN_IC50'] < gmed).astype(int)
@@ -74,15 +74,15 @@ def load_gdsc2():
 # ============================================================
 # LOAD PRISM with DepMap metadata
 # ============================================================
-def load_prism_proper():
+def load_prism_proper(prism_path, cell_info_path):
     print("  Loading PRISM secondary dose-response + DepMap metadata...")
-    pr = pd.read_csv('/home/claude/prism_primary.csv', low_memory=False,
+    pr = pd.read_csv(prism_path, low_memory=False,
                      usecols=['depmap_id','ic50','name'])
     pr = pr.dropna(subset=['ic50','depmap_id','name'])
     pr['ln_ic50'] = np.log(pr['ic50'].clip(1e-6))
     
     # DepMap metadata with proper lineage
-    meta = pd.read_csv('/home/claude/prism_cell_info.csv',
+    meta = pd.read_csv(cell_info_path,
                        usecols=['DepMap_ID','lineage','lineage_subtype'])
     
     # Proper lineage → TCGA mapping
@@ -126,8 +126,24 @@ def load_prism_proper():
 # MAIN
 # ============================================================
 def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    pa = argparse.ArgumentParser()
+    pa.add_argument('--gdsc2',
+                    default=os.path.join(here, 'GDSC2_fitted_dose_response_27Oct23.xlsx'),
+                    help='GDSC2 fitted dose-response .xlsx (default: next to this script)')
+    pa.add_argument('--prism',
+                    default=os.path.join(here, 'secondary-screen-dose-response-curve-parameters.csv'),
+                    help='PRISM secondary dose-response curve parameters CSV '
+                         '(columns read: depmap_id, ic50, name)')
+    pa.add_argument('--cell-info',
+                    default=os.path.join(here, 'prism_cell_info.csv'),
+                    help='DepMap cell-line metadata CSV '
+                         '(columns read: DepMap_ID, lineage, lineage_subtype)')
+    pa.add_argument('--outdir', default=here,
+                    help='output directory (default: this script\'s directory)')
+    args = pa.parse_args()
     t0 = time.time()
-    outdir = '/home/claude/output_v3'
+    outdir = args.outdir
     os.makedirs(outdir, exist_ok=True)
     
     print("="*72)
@@ -136,7 +152,7 @@ def main():
     
     # Load GDSC2
     print("\n[GDSC2] Loading...")
-    S,K,M,cancers,drugs,vj,J,I,drug_info,gmed = load_gdsc2()
+    S,K,M,cancers,drugs,vj,J,I,drug_info,gmed = load_gdsc2(args.gdsc2)
     print(f"  {len(vj)} cancers, {I} drugs, {int(M.sum())} cells")
     
     # Full-data fits
@@ -334,7 +350,7 @@ def main():
     print("TEST 4: PRISM REPLICATION (DepMap lineage mapping)")
     print(f"{'='*72}")
     
-    Sp,Kp,Mp,cp,dp,vjp,Jp,Ip = load_prism_proper()
+    Sp,Kp,Mp,cp,dp,vjp,Jp,Ip = load_prism_proper(args.prism, args.cell_info)
     theta_prism, _, _ = fit_irt(Sp, Kp, Mp, Jp, Ip)
     
     gdsc_th = {cancers[j]: theta_full[j] for j in vj}
@@ -403,7 +419,7 @@ def main():
         'sparsity_regimes': regimes,
         'n_bootstrap': n_boot,
         'n_sparsity_seeds': n_seeds,
-        'prism_mapping': 'DepMap lineage via prism_cell_info.csv',
+        'prism_mapping': f'DepMap lineage via {os.path.basename(args.cell_info)}',
         'prism_overlap': len(overlap) if len(overlap) >= 5 else 0,
         'prism_rho': round(rho_cross, 4) if len(overlap) >= 5 else None,
         'runtime_s': round(elapsed, 1)

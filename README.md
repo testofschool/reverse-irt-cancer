@@ -12,9 +12,9 @@ This repository applies reverse Item Response Theory (IRT) to pharmacogenomic dr
 |---------|--------|------|
 | GDSC2 Release 8.5 | [cancerrxgene.org](https://www.cancerrxgene.org/downloads/bulk_download) | `GDSC2_fitted_dose_response_27Oct23.xlsx` (21 MB) |
 | PRISM secondary | [depmap.org/repurposing](https://depmap.org/repurposing) | `secondary-screen-dose-response-curve-parameters.csv` (264 MB) |
-| DepMap metadata | [depmap.org/portal](https://depmap.org/portal) | `Model.csv` |
+| DepMap cell-line metadata | [depmap.org/portal](https://depmap.org/portal) | `prism_cell_info.csv` — a CSV with the columns `DepMap_ID`, `lineage`, `lineage_subtype` (the exact columns `validation_suite.py` reads; rename columns if your DepMap release uses different names) |
 
-Download these files and place them in the working directory before running the scripts.
+Download these files and place them in the repository directory under the names above (the scripts' default input paths), or pass their paths with the flags below.
 
 ## Installation
 
@@ -26,17 +26,21 @@ pip install -r requirements.txt
 
 ```bash
 # Step 1: Core reverse IRT (cancer resistance + drug evasion rankings)
-python challenge_c_v3_final.py
+python challenge_c_v3_final.py --gdsc2 GDSC2_fitted_dose_response_27Oct23.xlsx --outdir .
 
 # Step 2: Validation suite (sparsity 4 regimes + bootstrap + PRISM replication)
-python validation_suite.py
+python validation_suite.py --gdsc2 GDSC2_fitted_dose_response_27Oct23.xlsx \
+    --prism secondary-screen-dose-response-curve-parameters.csv \
+    --cell-info prism_cell_info.csv --outdir .
 
 # Step 3: Held-out prediction (5-baseline Brier comparison)
-python heldout_5baseline.py
+python heldout_5baseline.py --gdsc2 GDSC2_fitted_dose_response_27Oct23.xlsx --outdir .
 
-# Step 4: Generate paper figures
-python generate_figures.py
+# Step 4: Generate paper figures from the result CSVs
+python generate_figures.py --indir . --outdir .
 ```
+
+All flags are optional: when run from the repository directory, the values shown equal the defaults (defaults are resolved relative to each script's own directory), so `python <script>.py` alone reads the input files from, and writes outputs to, the repository directory (overwriting the committed CSVs/figures). Pass `--outdir` (and `--indir` for `generate_figures.py`) to write elsewhere. Steps 1 and 2 also write `metadata.json` and `validation_metadata.json`; these run-metadata files are not committed. Step 4 finishes with a Type-3 font check that calls `pdffonts` (poppler-utils).
 
 ## Output Files
 
@@ -53,10 +57,10 @@ python generate_figures.py
 
 ## Key Results
 
-- **Sparsity:** IRT wins all 12 comparisons across 4 regimes (Δρ = +0.089 to +0.095 at 60% missingness)
+- **Sparsity:** IRT wins all 12 comparisons across 4 regimes (Δρ = +0.089 to +0.095 at 60% missingness under MCAR / cancer-biased / drug-biased; +0.018 under pathway-block)
 - **Held-out:** IRT Brier 0.0143 beats two-way additive 0.0176 and logistic FE 0.0181
 - **Bootstrap:** 19/28 cancers have stable classifications (CIs not crossing zero)
-- **PRISM:** 82% directional agreement, weak rank-order (ρ = 0.25)
+- **PRISM:** weak, non-significant rank-order replication across 17 shared cancer types (Spearman ρ = 0.25, p = 0.33). Directional (sign) agreement is not informative here: every PRISM θ is positive (min 0.274), so it would only count the cancers with GDSC2 θ > 0
 
 ## Citation
 

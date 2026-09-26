@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Final production figures — Type 42 fonts, no overlap, clean legends."""
-import numpy as np, pandas as pd, os
+import numpy as np, pandas as pd, os, argparse
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib as mpl
@@ -14,11 +14,12 @@ mpl.rcParams["savefig.bbox"] = "tight"
 mpl.rcParams["savefig.pad_inches"] = 0.08
 import matplotlib.pyplot as plt
 
-OUT = '/home/claude/arxiv_pkg'
-os.makedirs(OUT, exist_ok=True)
+HERE = os.path.dirname(os.path.abspath(__file__))
+IN = HERE   # directory holding the result CSVs (default: this script's directory)
+OUT = HERE  # directory the figure PDFs are written to (default: this script's directory)
 
 def fig1():
-    df = pd.read_csv('/home/claude/output_v3/sparsity_results.csv')
+    df = pd.read_csv(os.path.join(IN, 'sparsity_results.csv'))
     fig, ax = plt.subplots(figsize=(5.5, 3.3))
     cfg = {
         'MCAR':            ('#2563eb','o','-'),
@@ -38,7 +39,10 @@ def fig1():
                     linewidth=1.4, markersize=4.5, capsize=2, capthick=0.7, linestyle=ls)
     ax.set_xlabel('Missing data (%)')
     ax.set_ylabel('$\\Delta\\rho$ (IRT $-$ Averaging)')
-    ax.legend(frameon=True, fontsize=7.5, loc='upper left', edgecolor='#d1d5db')
+    # Error bars are the SD of the IRT rho across the 15 seeds (column irt_sd);
+    # per-seed delta-rho values are not saved, so the SD of delta-rho is not shown.
+    ax.legend(frameon=True, fontsize=7.5, loc='upper left', edgecolor='#d1d5db',
+              title='Error bars: $\\pm$1 SD of IRT $\\rho$ (15 seeds)', title_fontsize=7)
     ax.axhline(0, color='gray', linewidth=0.5, linestyle='--')
     ax.set_xlim(-2, 65); ax.set_ylim(-0.01, 0.13)
     ax.grid(True, alpha=0.15)
@@ -46,7 +50,7 @@ def fig1():
     plt.close()
 
 def fig2():
-    df = pd.read_csv('/home/claude/output_v3/bootstrap_cis.csv').sort_values('theta', ascending=True)
+    df = pd.read_csv(os.path.join(IN, 'bootstrap_cis.csv')).sort_values('theta', ascending=True)
     fig, ax = plt.subplots(figsize=(5.5, 5.5))
     y = np.arange(len(df))
     colors = ['#dc2626' if t>0.5 else '#f97316' if t>0 else
@@ -65,7 +69,7 @@ def fig2():
     plt.close()
 
 def fig3():
-    df = pd.read_csv('/home/claude/output_v3/heldout_prediction.csv')
+    df = pd.read_csv(os.path.join(IN, 'heldout_prediction.csv'))
     fig, ax = plt.subplots(figsize=(5, 2.8))
     colors = ['#94a3b8','#94a3b8','#475569','#475569','#dc2626']
     ax.barh(np.arange(len(df)), df['brier'], color=colors, height=0.55,
@@ -81,19 +85,22 @@ def fig3():
     plt.close()
 
 def fig4():
-    df = pd.read_csv('/home/claude/output_v3/prism_replication.csv')
+    df = pd.read_csv(os.path.join(IN, 'prism_replication.csv'))
     fig, ax = plt.subplots(figsize=(4.5, 4.5))
-    agree = (df['gdsc2_theta']>0)==(df['prism_theta']>0)
-    ax.scatter(df.loc[agree,'gdsc2_theta'], df.loc[agree,'prism_theta'],
+    # Every PRISM theta is positive, so sign ("direction") agreement would only
+    # count GDSC2 theta > 0 and carries no PRISM information; points are
+    # therefore marked by the sign of the GDSC2 theta only.
+    pos = df['gdsc2_theta'] > 0
+    ax.scatter(df.loc[pos,'gdsc2_theta'], df.loc[pos,'prism_theta'],
               c='#2563eb', s=35, zorder=3, edgecolors='white', linewidth=0.5,
-              label='Direction agrees')
-    ax.scatter(df.loc[~agree,'gdsc2_theta'], df.loc[~agree,'prism_theta'],
+              label='GDSC2 $\\theta$ > 0')
+    ax.scatter(df.loc[~pos,'gdsc2_theta'], df.loc[~pos,'prism_theta'],
               c='#dc2626', s=40, zorder=3, marker='x', linewidths=1.5,
-              label='Direction disagrees')
-    # Label only extremes + disagreements with manual offsets
+              label='GDSC2 $\\theta$ < 0')
+    # Label only extremes + the GDSC2 theta < 0 cancers, with manual offsets
     offsets = {
         'PAAD':  (6, -8),  'MESO':  (-35, 5),  'UCEC':  (5, -10),
-        'LUAD':  (-30, -10), 'NB': (5, 5), 'HNSC': (5, -10),
+        'LUAD':  (-30, -10), 'NB': (5, 5), 'HNSC': (-10, 12),
         'STAD':  (5, 5),   'GBM':   (5, 5),    'KIRC':  (-32, -8),
     }
     for _, r in df.iterrows():
@@ -109,7 +116,7 @@ def fig4():
     ax.axvline(0, color='gray', linewidth=0.4, alpha=0.3)
     from scipy import stats
     rho, p = stats.spearmanr(df['gdsc2_theta'], df['prism_theta'])
-    ax.text(0.05, 0.95, f'$\\rho$ = {rho:.3f}, p = {p:.2f}\n{agree.sum()}/{len(df)} direction agree',
+    ax.text(0.05, 0.95, f'Spearman $\\rho$ = {rho:.3f}, p = {p:.2f}\nn = {len(df)} cancer types',
            transform=ax.transAxes, fontsize=7.5, va='top',
            bbox=dict(boxstyle='round,pad=0.3', facecolor='#fef3c7', alpha=0.7, edgecolor='#d4a373'))
     ax.set_xlabel('GDSC2 $\\theta$')
@@ -120,6 +127,14 @@ def fig4():
     plt.close()
 
 if __name__ == '__main__':
+    pa = argparse.ArgumentParser()
+    pa.add_argument('--indir', default=HERE,
+                    help='directory with the result CSVs (default: this script\'s directory)')
+    pa.add_argument('--outdir', default=HERE,
+                    help='directory for the figure PDFs (default: this script\'s directory)')
+    args = pa.parse_args()
+    IN, OUT = args.indir, args.outdir
+    os.makedirs(OUT, exist_ok=True)
     print("Generating final figures (Type 42, no overlap)...")
     fig1(); print("  Fig 1 ✓")
     fig2(); print("  Fig 2 ✓")

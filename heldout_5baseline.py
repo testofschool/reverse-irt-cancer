@@ -3,7 +3,7 @@
 FINAL HELD-OUT PREDICTION TEST
 With proper baselines: cancer-only, drug-only, two-way additive, logistic FE, IRT
 """
-import numpy as np, pandas as pd, json
+import numpy as np, pandas as pd, json, argparse, os
 from scipy.optimize import minimize
 from scipy.special import expit
 from scipy import stats
@@ -29,11 +29,21 @@ def fit_irt(S, K, M, J, I):
     return r.x[:J],r.x[J:J+I],r.success
 
 def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    pa = argparse.ArgumentParser()
+    pa.add_argument('--gdsc2',
+                    default=os.path.join(here, 'GDSC2_fitted_dose_response_27Oct23.xlsx'),
+                    help='GDSC2 fitted dose-response .xlsx (default: next to this script)')
+    pa.add_argument('--outdir', default=here,
+                    help='output directory (default: this script\'s directory)')
+    args = pa.parse_args()
+    os.makedirs(args.outdir, exist_ok=True)
+
     print("="*72)
     print("HELD-OUT PREDICTION: 5 BASELINES")
     print("="*72)
     
-    df = pd.read_excel('/home/claude/gdsc2_data.xlsx', engine='openpyxl')
+    df = pd.read_excel(args.gdsc2, engine='openpyxl')
     df = df[df['TCGA_DESC']!='UNCLASSIFIED'].copy()
     gmed = df['LN_IC50'].median()
     df['sens'] = (df['LN_IC50']<gmed).astype(int)
@@ -118,7 +128,8 @@ def main():
         marker = "← best" if m=='Reverse IRT' else ""
         print(f"  {m:<22} {b:>8.5f} {delta:>+8.5f} {marker}")
     
-    pd.DataFrame(rows).to_csv('/home/claude/output_v3/heldout_prediction.csv', index=False)
-    print(f"\n  Saved to output_v3/heldout_prediction.csv")
+    out = os.path.join(args.outdir, 'heldout_prediction.csv')
+    pd.DataFrame(rows).to_csv(out, index=False)
+    print(f"\n  Saved to {out}")
 
 if __name__=='__main__': main()
