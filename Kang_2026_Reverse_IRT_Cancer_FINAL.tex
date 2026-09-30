@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
+\usepackage{lmodern}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{natbib}
@@ -20,7 +21,7 @@ Seoul, South Korea}
 \maketitle
 
 \begin{abstract}
-We introduce reverse Item Response Theory (IRT) to pharmacogenomic drug-response analysis by treating cancer types as latent ``subjects'' with resistance ability and drugs as ``items'' with evasion difficulty. Applied to 242,036 drug sensitivity measurements from the Genomics of Drug Sensitivity in Cancer (GDSC2) database, the model estimates cancer-type-level in-vitro resistance and drug-level broad activity on a shared latent scale. Validation across four missingness regimes demonstrates that reverse IRT better recovers the full-data latent ranking than simple averaging, with advantages of $\Delta\rho = +0.089$ to $+0.095$ at 60\% missingness under MCAR, cancer-biased, and drug-biased sparsity. Held-out prediction confirms IRT achieves the best Brier score among five evaluated methods. Bootstrap confidence intervals show 19 of 28 cancer types have stable resistant/sensitive classifications. Cross-platform PRISM replication shows 82\% directional agreement but weak rank-order correlation ($\rho = 0.25$), indicating the contribution is methodological robustness under fragmented evaluation, not a universal clinical resistance leaderboard.
+We introduce reverse Item Response Theory (IRT) to pharmacogenomic drug-response analysis by treating cancer types as latent ``subjects'' with resistance ability and drugs as ``items'' with evasion difficulty. Applied to 242,036 drug sensitivity measurements from the Genomics of Drug Sensitivity in Cancer (GDSC2) database, the model estimates cancer-type-level in-vitro resistance and drug-level broad activity on a shared latent scale. Validation across four missingness regimes demonstrates that reverse IRT better recovers the full-data latent ranking than simple averaging, with advantages of $\Delta\rho = +0.089$ to $+0.095$ at 60\% missingness under MCAR, cancer-biased, and drug-biased sparsity. Held-out prediction confirms IRT achieves the best Brier score among five evaluated methods. Bootstrap confidence intervals show 19 of 28 cancer types have stable resistant/sensitive classifications. Cross-platform PRISM replication shows a weak, non-significant rank-order correlation ($\rho = 0.25$, $p = 0.33$, 17 cancer types), indicating the contribution is methodological robustness under fragmented evaluation, not a universal clinical resistance leaderboard.
 \end{abstract}
 
 \section{Introduction}
@@ -50,7 +51,7 @@ The primary contribution is not the specific rankings---which are platform-depen
 
 \textbf{Sparsity test.} Remove 20--60\% of cells under four regimes: MCAR, cancer-biased (harder cancers lose more), drug-biased (weaker drugs lose more), pathway-block (entire pathways removed). Evaluate Spearman $\rho$ vs.\ full-data IRT ranking (15 seeds).
 
-\textbf{Held-out prediction.} 20\% cells held out, 10-fold CV. Brier score against cancer-only averaging, drug-only averaging, two-way additive ($\text{global} + \text{cancer effect} + \text{drug effect}$), logistic fixed effects, and reverse IRT.
+\textbf{Held-out prediction.} 10 independent random hold-out splits, each holding out 20\% of observed cells (repeated random splits, not $k$-fold cross-validation). Brier score against cancer-only averaging, drug-only averaging, two-way additive ($\text{global} + \text{cancer effect} + \text{drug effect}$), logistic fixed effects, and reverse IRT.
 
 \textbf{Bootstrap CIs.} 200 drug-panel (column) resamples for 95\% CIs on $\theta$.
 
@@ -64,7 +65,7 @@ Reverse IRT outperforms averaging across all regimes (Table~\ref{tab:sparsity}, 
 
 \begin{table}[ht]
 \centering
-\caption{$\Delta\rho$ = IRT $-$ averaging for recovery of the full-data IRT ranking under induced sparsity (mean $\pm$ SD, 15 seeds).}
+\caption{$\Delta\rho$ = IRT $-$ averaging (difference of the 15-seed mean $\rho$) for recovery of the full-data IRT ranking under induced sparsity. $\pm$: SD of the IRT $\rho$ across the 15 seeds (per-seed $\Delta\rho$ values were not saved).}
 \label{tab:sparsity}
 \small
 \begin{tabular}{lccc}
@@ -82,7 +83,7 @@ Pathway-block & $+0.008 \pm 0.004$ & $+0.019 \pm 0.004$ & $+0.018 \pm 0.008$ \\
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.85\linewidth]{fig1_sparsity.pdf}
-\caption{Ranking recovery advantage ($\Delta\rho$) of reverse IRT over averaging under four missingness regimes. Error bars show $\pm 1$ SD across 15 seeds. IRT outperforms averaging in all conditions.}
+\caption{Ranking recovery advantage ($\Delta\rho$) of reverse IRT over averaging under four missingness regimes. Error bars show $\pm 1$ SD of the IRT $\rho$ across 15 seeds (not the SD of $\Delta\rho$). IRT outperforms averaging in all conditions.}
 \label{fig:sparsity}
 \end{figure}
 
@@ -92,7 +93,7 @@ IRT achieves the best Brier score among all five evaluated methods (Table~\ref{t
 
 \begin{table}[ht]
 \centering
-\caption{Mean Brier score across 10 held-out folds (lower = better).}
+\caption{Brier score over held-out cells from 10 independent random 20\% hold-out splits (lower = better).}
 \label{tab:brier}
 \small
 \begin{tabular}{lcc}
@@ -111,7 +112,7 @@ Logistic fixed effects & 0.0181 & $+0.0038$ \\
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.8\linewidth]{fig3_heldout.pdf}
-\caption{Held-out Brier score among five evaluated methods (10-fold CV). Reverse IRT outperforms all methods including the fairer two-way additive and logistic fixed-effect baselines.}
+\caption{Held-out Brier score among five evaluated methods (10 random 20\% hold-out splits). Reverse IRT outperforms all methods including the fairer two-way additive and logistic fixed-effect baselines.}
 \label{fig:heldout}
 \end{figure}
 
@@ -128,12 +129,12 @@ The ranking shows face-valid concordance with known clinical difficulty patterns
 
 \subsection{External Replication}
 
-PRISM replication yields $\rho = 0.252$ ($p = 0.33$) with 82\% directional agreement (14/17 cancers; Figure~\ref{fig:prism}). Directional agreement is strongest at the extremes. Three middle-tier cancers (STAD, HNSC, NB) show disagreement, consistent with the bootstrap uncertainty zone.
+PRISM replication yields a weak, non-significant rank-order correlation, $\rho = 0.252$ ($p = 0.33$; 17 overlapping cancer types; Figure~\ref{fig:prism}). We do not use directional (sign) agreement as evidence: every PRISM $\theta$ is positive (minimum $0.274$), so sign agreement only counts the cancers with GDSC2 $\theta > 0$ (14/17) and carries no information from PRISM. The three sign mismatches are simply the three overlapping cancers with GDSC2 $\theta < 0$ (STAD, HNSC, NB). STAD and HNSC have bootstrap CIs crossing zero; NB does not (95\% CI $[-0.914, -0.277]$), so NB is not in the bootstrap uncertainty zone.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.72\linewidth]{fig4_prism.pdf}
-\caption{GDSC2 vs PRISM resistance estimates. Blue: directional agreement; red crosses: disagreement. Only extremes and disagreements are labeled; full table in repository outputs. Weak rank-order correlation ($\rho = 0.25$) despite 82\% directional agreement.}
+\caption{GDSC2 vs PRISM resistance estimates (17 overlapping cancer types). Blue: GDSC2 $\theta > 0$; red crosses: GDSC2 $\theta < 0$. All PRISM $\theta$ are positive, so sign agreement is uninformative and is not reported. Only extremes and the GDSC2 $\theta < 0$ cancers are labeled; full table in repository outputs. Rank-order correlation is weak and non-significant ($\rho = 0.25$, $p = 0.33$).}
 \label{fig:prism}
 \end{figure}
 
@@ -142,7 +143,7 @@ PRISM replication yields $\rho = 0.252$ ($p = 0.33$) with 82\% directional agree
 
 The primary finding is methodological: reverse IRT provides sparsity-robust ranking recovery in drug-response matrices. The Evaluation Failure Scaling Law mechanism \citep{kang2026efsl}, originally demonstrated in AI benchmark evaluation, transfers to pharmacogenomic data.
 
-\textbf{Limitations.} (1)~Cell-line in-vitro resistance does not equal clinical resistance. (2)~Binarization at a global $\text{LN\_IC50}$ median discards continuous information. (3)~The 1PL model assumes unidimensional resistance; the LLTM \citep{fischer1973,kang2026lltm} with mutation features could decompose resistance into interpretable components. (4)~PRISM replication is directionally consistent but rank-order weak, reflecting platform differences.
+\textbf{Limitations.} (1)~Cell-line in-vitro resistance does not equal clinical resistance. (2)~Binarization at a global $\text{LN\_IC50}$ median discards continuous information. (3)~The 1PL model assumes unidimensional resistance; the LLTM \citep{fischer1973,kang2026lltm} with mutation features could decompose resistance into interpretable components. (4)~PRISM replication is weak and non-significant in rank order ($\rho = 0.25$, $p = 0.33$), possibly reflecting platform differences.
 
 \section{Conclusion}
 
@@ -159,10 +160,11 @@ PRISM secondary dose-response and DepMap cell line metadata are available from D
 \begin{quote}
 \url{https://depmap.org/repurposing}
 \end{quote}
-All code, validation scripts, output CSVs, and metadata:
+All code, validation scripts, and output CSVs:
 \begin{quote}
 \url{https://github.com/testofschool/reverse-irt-cancer}
 \end{quote}
+Running \nolinkurl{challenge_c_v3_final.py} and \nolinkurl{validation_suite.py} also writes the run-metadata files \nolinkurl{metadata.json} and \nolinkurl{validation_metadata.json}; these files are not included in the repository.
 
 \bibliographystyle{plainnat}
 \begin{thebibliography}{15}

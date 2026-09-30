@@ -6,7 +6,7 @@ Fixes from v2 review:
 - GLOBAL LN_IC50 threshold (not drug-specific Z_SCORE or median)
 - CLL excluded (only 9 drugs, insufficient coverage)
 - Metadata with SHA256 and version info
-- required=True for CLI args
+- CLI args with defaults relative to the script directory
 - Corrected wording throughout
 
 Binarization: sensitive = LN_IC50 < global_median (3.30)
@@ -120,11 +120,13 @@ def fit_irt(S, K, M):
     return res.x[:J], res.x[J:J+I]
 
 def main():
+    here = os.path.dirname(os.path.abspath(__file__))
     pa = argparse.ArgumentParser()
-    pa.add_argument('--gdsc2', required='--help' not in sys.argv,
-                    default='/home/claude/gdsc2_data.xlsx')
-    pa.add_argument('--outdir', required='--help' not in sys.argv,
-                    default='/home/claude/output_v3')
+    pa.add_argument('--gdsc2',
+                    default=os.path.join(here, 'GDSC2_fitted_dose_response_27Oct23.xlsx'),
+                    help='GDSC2 fitted dose-response .xlsx (default: next to this script)')
+    pa.add_argument('--outdir', default=here,
+                    help='output directory (default: this script\'s directory)')
     args = pa.parse_args()
     os.makedirs(args.outdir, exist_ok=True)
     t0 = time.time()
